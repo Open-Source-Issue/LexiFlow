@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+body, html {
+    width: 400px;
+    height: 600px;
+    min-width: 400px;
+    min-height: 600px;
+}
