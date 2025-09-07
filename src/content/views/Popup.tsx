@@ -22,7 +22,8 @@ const Popup: React.FC<PopupProps> = ({
   const dragOffset = useRef({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
-  console.log("Selected Text:", translating);
+  console.log('selected text', translating);
+
   // Drag logic
   const handleMouseDown = (e: React.PointerEvent) => {
     setDragging(true);
@@ -57,7 +58,7 @@ const Popup: React.FC<PopupProps> = ({
     if (chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
     } else {
-      window.open(chrome.runtime.getURL("src/options/options.html"));
+      window.open(chrome.runtime.getURL("options.html"));
     }
   };
 
@@ -65,7 +66,7 @@ const Popup: React.FC<PopupProps> = ({
     if (chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
     } else {
-      window.open(chrome.runtime.getURL("src/options/options.html#glossary"));
+      window.open(chrome.runtime.getURL("options.html#glossary"));
     }
   };
 
@@ -130,8 +131,9 @@ const Popup: React.FC<PopupProps> = ({
     // eslint-disable-next-line
   }, [selectedText, targetLang]);
 
-  const logoUrl = chrome.runtime.getURL("logo.png");
+  const logoUrl = chrome.runtime.getURL("logo1.svg");
 
+  console.log("translation:", translation);
   return (
     <div
       ref={dragRef}
@@ -140,7 +142,7 @@ const Popup: React.FC<PopupProps> = ({
         left: position.x,
         top: position.y,
         width: "min(96vw, 630px)",
-        height: "320px",
+        height: "auto",
         zIndex: 9999,
         background: "#fff",
         color: "#222",
@@ -158,7 +160,7 @@ const Popup: React.FC<PopupProps> = ({
       <div className="w-full border-b-2 border-gray-100 flex flex-col">
         <div className="flex items-center justify-between border-inline border-t-0 p-4 pt-1">
           <div className="flex items-center gap-2">
-            <img src={logoUrl} alt="Lexiflow" className="h-4" />
+           <img src={logoUrl} alt="Logo" className=" h-4 " />
             <span className="ml-2 flex items-center gap-1 text-gray-700 font-medium">
               <svg
                 width="20"
@@ -212,7 +214,7 @@ const Popup: React.FC<PopupProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-red-500 text-xl"
+              className="text-gray-400 hover:text-gray-800 text-xl"
             >
               ✕
             </button>
@@ -280,7 +282,7 @@ const Popup: React.FC<PopupProps> = ({
         <select
           value={targetLang}
           onChange={(e) => setTargetLang(e.target.value)}
-          className="w-1/3 border-2 rounded-sm px-3 py-2 text-sm border-t-0 border-gray-300 focus:outline-none"
+          className="w-1/3 border-2 rounded-sm px-3 py-2 text-sm border-t-0 border-gray-300 focus:outline-none focus-visible:outline-none"
         >
           {languages.map((lang) => (
             <option key={lang.code} value={lang.code}>

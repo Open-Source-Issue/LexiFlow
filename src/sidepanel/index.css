@@ -3,8 +3,9 @@
 
 
 :root {
-  --font-display: 'Inter';
-} 
+    font-family: 'Courier New', Courier, monospace;
+}
+
 
 body {
   font-family: 'Inter', 'monospace';

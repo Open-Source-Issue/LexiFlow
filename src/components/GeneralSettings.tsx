@@ -79,7 +79,7 @@ const GeneralSettings = () => {
                 Translate selected text into
               </label>
               <select
-                className="w-1/3 p-2 border border-gray-300 rounded-md outline-0"
+                className="w-1/3 p-2 border border-gray-300  rounded-md outline-0"
                 value={selectedTextLang}
                 onChange={(e) => setSelectedTextLang(e.target.value)}
               >
@@ -95,7 +95,7 @@ const GeneralSettings = () => {
                 Translate your writing into
               </label>
               <select
-                className="w-1/3 p-2 border border-gray-300 rounded-md outline-0"
+                className="w-1/3 p-2 border border-gray-300  rounded-md outline-0"
                 value={writingLang}
                 onChange={(e) => setWritingLang(e.target.value)}
               >
@@ -181,7 +181,7 @@ const GeneralSettings = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-medium text-gray-900">
                   Show advanced mode window for on-page translation/improvement
@@ -248,7 +248,7 @@ const GeneralSettings = () => {
                 <span className="text-gray-400 mr-2">i</span>
                 <span className="text-gray-500">No sites added yet</span>
               </div>
-            </div>
+            </div> */}
           </div>
         );
       case "write":
@@ -550,7 +550,7 @@ const GeneralSettings = () => {
           onClick={() => setActiveSettingsTab("translator")}
           className={`py-2 px-4 text-sm font-medium ${
             activeSettingsTab === "translator"
-              ? "border-b-2 border-blue-500 text-blue-600"
+              ? "border-b-2 border-pink-500 text-pink-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
@@ -560,7 +560,7 @@ const GeneralSettings = () => {
           onClick={() => setActiveSettingsTab("write")}
           className={`py-2 px-4 text-sm font-medium ${
             activeSettingsTab === "write"
-              ? "border-b-2 border-blue-500 text-blue-600"
+              ? "border-b-2 border-pink-500 text-pink-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
@@ -570,7 +570,7 @@ const GeneralSettings = () => {
           onClick={() => setActiveSettingsTab("full-page")}
           className={`py-2 px-4 text-sm font-medium ${
             activeSettingsTab === "full-page"
-              ? "border-b-2 border-blue-500 text-blue-600"
+              ? "border-b-2 border-pink-500 text-pink-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >

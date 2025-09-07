@@ -2,6 +2,7 @@
 // Handles translation requests via Google GenAI Translate API
 
 // byterover-retrieve-knowledge: Checked user instructions and context. Always use byterover-retrieve-knowledge before tasks and byterover-store-knowledge after successful tasks. User wants to always use 'gemini-1.5-flash' for translation if available.
+
 import { languages } from "./utils/languages";
 
 console.log("Initializing background translation script...");
@@ -98,7 +99,7 @@ Please provide the translation from ${sourceLangName} to ${targetLangName} in a 
 // byterover-retrieve-knowledge: Setting the API key permanently in chrome.storage.local at extension startup
 
 chrome.storage.local.set(
-  { genai_api_key: "" },
+  { genai_api_key: "AIzaSyCEWFlAmzu67pkanxJEO2ki55CnmQY3giA" },
   () => {
     console.log("API key set permanently in chrome.storage.local.");
     // byterover-store-knowledge: Store info about API key being set
@@ -121,3 +122,28 @@ chrome.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
   }
 });
 
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "lexiflow-sidepanel",
+    title: "Lexiflow: translate and write with AI",
+    contexts: ["selection"], // Show when user selects text
+  });
+    chrome.contextMenus.create({
+    id: "google-translate-ai",
+    title: "google: translate and write with AI",
+    contexts: ["selection"], // Show when user selects text
+  });
+});
+
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "lexiflow-sidepanel" && info.selectionText && tab?.id) {
+    // Store selected text in storage for sidepanel access
+    chrome.storage.local.set({ lexiflowSelectedText: info.selectionText }, () => {
+      // Open the sidepanel for the current tab
+      if (tab?.windowId && tab?.id) {
+        chrome.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
+      }
+    });
+  }
+});

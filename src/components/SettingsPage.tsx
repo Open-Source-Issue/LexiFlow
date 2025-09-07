@@ -26,7 +26,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen ">
       <div className="w-64 bg-white p-4 border-r">
         <div className="flex items-center mb-8">
           <img src="/logo.png" alt="Logo" className="h-full w-30 mr-2" />

@@ -19,7 +19,7 @@ const Integrations = () => {
   };
 
   return (
-    <div className="p-6 bg-white w-full">
+    <div className="p-6 bg-white w-full h-screen overflow-y-auto">
       <h2 className="text-2xl font-normal mb-6">Integrations</h2>
       <div className="space-y-6">
         {integrations.map((item, index) => (
