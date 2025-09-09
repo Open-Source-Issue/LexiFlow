@@ -1,19 +1,14 @@
-import ToggleSwitch from "../utils/ToggleSwitch";
-import { useState } from "react";
+import ToggleSwitch from "../context/ToggleSwitch";
+import { useEffect, useState } from "react";
 import { languages } from "../utils/languages";
+import { useLexiFlowSettings } from "../context/LexiFlowSettingsContext";
 
 const GeneralSettings = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState("translator");
-  const [selectedTextLang, setSelectedTextLang] = useState("hi");
-  const [writingLang, setWritingLang] = useState("hi");
-  const [improveLang, setImproveLang] = useState("hi");
-  const [fullPageLang, setFullPageLang] = useState("hi");
   const [showLanguageList, setShowLanguageList] = useState(false);
   const [excludedLanguages, setExcludedLanguages] = useState<string[]>([]);
   const [showAutoTranslateList, setShowAutoTranslateList] = useState(false);
-  const [autoTranslateLanguages, setAutoTranslateLanguages] = useState<
-    string[]
-  >([]);
+  const [autoTranslateLanguages, setAutoTranslateLanguages] = useState<string[]>([]);
   const [windowPosition, setWindowPosition] = useState("Default position");
   const [showWindowPositionList, setShowWindowPositionList] = useState(false);
   const windowPositions = [
@@ -24,11 +19,27 @@ const GeneralSettings = () => {
     "Right",
   ];
 
-  // All toggles managed in a single state object
+
+
+  // Use LexiFlow context for global toggles and language
+  const {
+    clickIcon, setClickIcon,
+    rightClick, setRightClick,
+    shortcut, setShortcut,
+    loading,
+    sourceLang, setSourceLang,
+    targetLang, setTargetLang,
+    improveLang, setImproveLang,
+  } = useLexiFlowSettings();
+
+
+
+useEffect(()=> {
+    console.log("Target language changed to:", targetLang);
+},[targetLang])
+
+  // Local fallback for other toggles
   const [toggles, setToggles] = useState({
-    clickIcon: true,
-    rightClick: true,
-    shortcut: true,
     advancedMode: true,
     floatingIcon: true,
     alwaysShowReading: true,
@@ -36,6 +47,7 @@ const GeneralSettings = () => {
     fullPagePopup: true,
     autoClosePanel: true,
   });
+  
   const handleToggle = (key: keyof typeof toggles, value: boolean) => {
     setToggles((prev) => ({ ...prev, [key]: value }));
   };
@@ -79,9 +91,9 @@ const GeneralSettings = () => {
                 Translate selected text into
               </label>
               <select
-                className="w-1/3 p-2 border border-gray-300  rounded-md outline-0"
-                value={selectedTextLang}
-                onChange={(e) => setSelectedTextLang(e.target.value)}
+                className="w-1/3 p-2 border border-gray-300 rounded-md outline-0"
+                value={sourceLang}
+                onChange={(e) => setSourceLang(e.target.value)}
               >
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
@@ -95,9 +107,9 @@ const GeneralSettings = () => {
                 Translate your writing into
               </label>
               <select
-                className="w-1/3 p-2 border border-gray-300  rounded-md outline-0"
-                value={writingLang}
-                onChange={(e) => setWritingLang(e.target.value)}
+                className="w-1/3 p-2 border border-gray-300 rounded-md outline-0"
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
               >
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
@@ -109,22 +121,24 @@ const GeneralSettings = () => {
             <div className="space-y-2">
               <div className="flex items-center">
                 <ToggleSwitch
-                  checked={toggles.clickIcon}
-                  onChange={(val: boolean) => handleToggle("clickIcon", val)}
+                  checked={clickIcon}
+                  onChange={setClickIcon}
                   label="Click the LexiFlow icon"
+                  disabled={loading}
                 />
               </div>
               <div className="flex items-center">
                 <ToggleSwitch
-                  checked={toggles.rightClick}
-                  onChange={(val: boolean) => handleToggle("rightClick", val)}
+                  checked={rightClick}
+                  onChange={setRightClick}
                   label="Click right on your mouse"
+                  disabled={loading}
                 />
               </div>
               <div className="flex items-center">
                 <ToggleSwitch
-                  checked={toggles.shortcut}
-                  onChange={(val: boolean) => handleToggle("shortcut", val)}
+                  checked={shortcut}
+                  onChange={setShortcut}
                   label={
                     <span>
                       Use shortcut{" "}
@@ -133,6 +147,7 @@ const GeneralSettings = () => {
                       <span className="bg-gray-200 px-2 py-1 rounded">Y</span>
                     </span>
                   }
+                  disabled={loading}
                 />
               </div>
               <button className="text-sm text-blue-600 hover:underline">
@@ -181,74 +196,6 @@ const GeneralSettings = () => {
                 )}
               </div>
             </div>
-            {/* <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">
-                  Show advanced mode window for on-page translation/improvement
-                </h4>
-              </div>
-              <ToggleSwitch
-                checked={toggles.advancedMode}
-                onChange={(val: boolean) => handleToggle("advancedMode", val)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">
-                  Show the LexiFlow floating icon
-                </h4>
-              </div>
-              <ToggleSwitch
-                checked={toggles.floatingIcon}
-                onChange={(val: boolean) => handleToggle("floatingIcon", val)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">
-                  Always show the LexiFlow icon for reading
-                </h4>
-                <p className="text-sm text-gray-500">
-                  The icon shows up when you select text.
-                </p>
-              </div>
-              <ToggleSwitch
-                checked={toggles.alwaysShowReading}
-                onChange={(val: boolean) => handleToggle("alwaysShowReading", val)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Never show the LexiFlow icon for reading on these sites
-              </label>
-              <div className="border border-gray-300 rounded-md p-2 flex items-center">
-                <span className="text-gray-400 mr-2">i</span>
-                <span className="text-gray-500">No sites added yet</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">
-                  Always show the LexiFlow icon for writing
-                </h4>
-                <p className="text-sm text-gray-500">
-                  The icon shows up when you write text.
-                </p>
-              </div>
-              <ToggleSwitch
-                checked={toggles.alwaysShowWriting}
-                onChange={(val: boolean) => handleToggle("alwaysShowWriting", val)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Never show the LexiFlow icon for writing on these sites
-              </label>
-              <div className="border border-gray-300 rounded-md p-2 flex items-center">
-                <span className="text-gray-400 mr-2">i</span>
-                <span className="text-gray-500">No sites added yet</span>
-              </div>
-            </div> */}
           </div>
         );
       case "write":
@@ -262,6 +209,7 @@ const GeneralSettings = () => {
                 className="w-1/3 p-2 border border-gray-300 rounded-md"
                 value={improveLang}
                 onChange={(e) => setImproveLang(e.target.value)}
+                disabled={loading}
               >
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
@@ -348,8 +296,9 @@ const GeneralSettings = () => {
               </label>
               <select
                 className="w-1/3 p-2 border border-gray-300 rounded-md"
-                value={fullPageLang}
-                onChange={(e) => setFullPageLang(e.target.value)}
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
+                disabled={loading}
               >
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
@@ -544,7 +493,6 @@ const GeneralSettings = () => {
   return (
     <div className="p-6 bg-white w-full">
       <h2 className="text-2xl font-normal mb-6">General Settings</h2>
-
       <div className="flex border-b mb-6">
         <button
           onClick={() => setActiveSettingsTab("translator")}
@@ -577,7 +525,6 @@ const GeneralSettings = () => {
           Full page translation
         </button>
       </div>
-
       {renderSettingsContent()}
     </div>
   );

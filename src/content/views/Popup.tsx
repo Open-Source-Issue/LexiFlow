@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { languages } from "../../utils/languages";
+import { useLexiFlowSettings } from "../../context/LexiFlowSettingsContext";
 
 interface PopupProps {
   selectedText?: string;
@@ -13,8 +14,6 @@ const Popup: React.FC<PopupProps> = ({
   initialPosition,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [sourceLang, setSourceLang] = useState("en");
-  const [targetLang, setTargetLang] = useState("hi");
   const [translating, setTranslating] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
   const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
@@ -22,7 +21,15 @@ const Popup: React.FC<PopupProps> = ({
   const dragOffset = useRef({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
-  console.log('selected text', translating);
+  // ✅ Get global settings from context
+  const {
+    sourceLang,
+    setSourceLang,
+    targetLang,
+    setTargetLang,
+  } = useLexiFlowSettings();
+
+  console.log("selected text", translating);
 
   // Drag logic
   const handleMouseDown = (e: React.PointerEvent) => {
@@ -32,6 +39,7 @@ const Popup: React.FC<PopupProps> = ({
       y: e.clientY - position.y,
     };
   };
+
   useEffect(() => {
     const handleMouseMove = (e: PointerEvent) => {
       if (dragging) {
@@ -52,8 +60,7 @@ const Popup: React.FC<PopupProps> = ({
     };
   }, [dragging, position]);
 
-  // byterover-retrieve-knowledge: Reviewing translation logic and Chrome extension messaging context
-
+  // Open Settings
   const handleSettingsClick = () => {
     if (chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
@@ -62,6 +69,7 @@ const Popup: React.FC<PopupProps> = ({
     }
   };
 
+  // Open Glossary
   const handleGlossaryClick = () => {
     if (chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
@@ -70,15 +78,14 @@ const Popup: React.FC<PopupProps> = ({
     }
   };
 
-
-  // Copy to clipboard handler
+  // Copy to clipboard
   const handleCopy = () => {
     if (translation) {
       navigator.clipboard
         .writeText(translation)
         .then(() => {
           setCopied(true);
-          setTimeout(() => setCopied(false), 1200); // Reset after 1.2s
+          setTimeout(() => setCopied(false), 1200);
         })
         .catch(() => {
           alert("Failed to copy translation.");
@@ -89,16 +96,13 @@ const Popup: React.FC<PopupProps> = ({
   // Translation logic
   const handleTranslate = () => {
     if (!selectedText) return;
-    // setTranslating(true);
     setTranslation(null);
 
-    // Check if chrome.runtime and chrome.runtime.sendMessage are available
     if (
       typeof chrome !== "undefined" &&
       chrome.runtime &&
       typeof chrome.runtime.sendMessage === "function"
     ) {
-      // Send message to background script for translation
       chrome.runtime.sendMessage(
         {
           action: "translate",
@@ -115,7 +119,6 @@ const Popup: React.FC<PopupProps> = ({
           } else {
             setTranslation(response?.translatedText || "No result");
           }
-          // byterover-store-knowledge: Store translation result and error info for debugging
         }
       );
     } else {
@@ -134,6 +137,7 @@ const Popup: React.FC<PopupProps> = ({
   const logoUrl = chrome.runtime.getURL("logo1.svg");
 
   console.log("translation:", translation);
+
   return (
     <div
       ref={dragRef}
@@ -160,7 +164,7 @@ const Popup: React.FC<PopupProps> = ({
       <div className="w-full border-b-2 border-gray-100 flex flex-col">
         <div className="flex items-center justify-between border-inline border-t-0 p-4 pt-1">
           <div className="flex items-center gap-2">
-           <img src={logoUrl} alt="Logo" className=" h-4 " />
+            <img src={logoUrl} alt="Logo" className=" h-4 " />
             <span className="ml-2 flex items-center gap-1 text-gray-700 font-medium">
               <svg
                 width="20"
@@ -221,7 +225,8 @@ const Popup: React.FC<PopupProps> = ({
           </div>
         </div>
       </div>
-      {/* Language Selectors and Swap */}
+
+      {/* Language Selectors */}
       <div className="flex justify-between items-center gap-6 px-6 py-6 border-gray-200 border-b-2">
         <select
           value={sourceLang}
@@ -235,11 +240,12 @@ const Popup: React.FC<PopupProps> = ({
           ))}
         </select>
         <button
-          className="mx-2 p-2 rounded-full border border-gray-200  hover:bg-gray-200"
+          className="mx-2 p-2 rounded-full border border-gray-200 hover:bg-gray-200"
           title="Swap languages"
           onClick={() => {
+            const temp = sourceLang;
             setSourceLang(targetLang);
-            setTargetLang(sourceLang);
+            setTargetLang(temp);
           }}
         >
           <svg
@@ -304,12 +310,10 @@ const Popup: React.FC<PopupProps> = ({
         </button>
       </div>
 
-      {/* Divider */}
       {/* Translation Result */}
       <div className="px-6 py-4 bg-white">
         {translation ? (
           <div className="text-left">
-            {/* If translation is structured JSON, show sections */}
             {(() => {
               let parsed;
               try {
@@ -357,7 +361,7 @@ const Popup: React.FC<PopupProps> = ({
                 return <span>{translation}</span>;
               }
             })()}
-            {/* Sound and Copy icons */}
+            {/* Copy + Sound */}
             <div className="flex gap-2 mt-4 justify-end">
               <button
                 className="p-2 rounded-full hover:bg-gray-200 text-gray-500"

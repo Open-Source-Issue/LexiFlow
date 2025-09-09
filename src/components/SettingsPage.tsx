@@ -1,24 +1,28 @@
-import { useState, useEffect } from 'react';
-import GeneralSettings from './GeneralSettings';
-import Integrations from './Integrations';
-import GlossarySettings from './GlossarySettings';
+import { useState, useEffect } from "react";
+import GeneralSettings from "./GeneralSettings";
+import Integrations from "./Integrations";
+import GlossarySettings from "./GlossarySettings";
+import { LexiFlowSettingsProvider } from "../context/LexiFlowSettingsContext";
 
 const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState(window.location.hash || '#general');
+  const [activeTab, setActiveTab] = useState(
+    window.location.hash || "#general"
+  );
 
   useEffect(() => {
-    const onHashChange = () => setActiveTab(window.location.hash || '#general');
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    const onHashChange = () =>
+      setActiveTab(window.location.hash || "#general");
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   const renderContent = () => {
     switch (activeTab) {
-      case '#general':
+      case "#general":
         return <GeneralSettings />;
-      case '#integrations':
+      case "#integrations":
         return <Integrations />;
-      case '#glossary':
+      case "#glossary":
         return <GlossarySettings />;
       default:
         return <GeneralSettings />;
@@ -26,43 +30,62 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen ">
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
       <div className="w-64 bg-white p-4 border-r">
         <div className="flex items-center mb-8">
-          <img src="/logo.png" alt="Logo" className="h-full w-30 mr-2" />
+          <img
+            src="/logo.png" // from public folder
+            alt="Logo"
+            className="h-10 w-auto mr-2"
+          />
         </div>
         <nav className="space-y-2">
-          <button 
+          <button
             onClick={() => {
-              setActiveTab('#general');
-              window.location.hash = '#general';
+              setActiveTab("#general");
+              window.location.hash = "#general";
             }}
-            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === '#general' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
+              activeTab === "#general"
+                ? "bg-pink-100 text-pink-700"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
           >
             General Settings
           </button>
-          <button 
+          <button
             onClick={() => {
-              setActiveTab('#integrations');
-              window.location.hash = '#integrations';
+              setActiveTab("#integrations");
+              window.location.hash = "#integrations";
             }}
-            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === '#integrations' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
+              activeTab === "#integrations"
+                ? "bg-pink-100 text-pink-700"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
           >
             Integrations
           </button>
-          <button 
+          <button
             onClick={() => {
-              setActiveTab('#glossary');
-              window.location.hash = '#glossary';
+              setActiveTab("#glossary");
+              window.location.hash = "#glossary";
             }}
-            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === '#glossary' ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
+              activeTab === "#glossary"
+                ? "bg-pink-100 text-pink-700"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
           >
             Glossary
           </button>
         </nav>
       </div>
+
+      {/* Main Content with Global Provider */}
       <main className="flex-1">
-        {renderContent()}
+        <LexiFlowSettingsProvider>{renderContent()}</LexiFlowSettingsProvider>
       </main>
     </div>
   );

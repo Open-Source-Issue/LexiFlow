@@ -99,7 +99,7 @@ Please provide the translation from ${sourceLangName} to ${targetLangName} in a 
 // byterover-retrieve-knowledge: Setting the API key permanently in chrome.storage.local at extension startup
 
 chrome.storage.local.set(
-  { genai_api_key: "AIzaSyCEWFlAmzu67pkanxJEO2ki55CnmQY3giA" },
+  { genai_api_key: "" },
   () => {
     console.log("API key set permanently in chrome.storage.local.");
     // byterover-store-knowledge: Store info about API key being set

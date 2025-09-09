@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ToggleSwitch from '../utils/ToggleSwitch';
+import ToggleSwitch from '../context/ToggleSwitch';
 
 const Integrations = () => {
   const integrations = [
