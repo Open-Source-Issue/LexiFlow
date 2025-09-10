@@ -27,6 +27,22 @@ export default function App() {
     });
   }, []);
 
+  // 🔄 Listen for live updates when background sends new text
+useEffect(() => {
+  const listener = (msg: any) => {
+    if (msg.action === "updateSelectedText" && msg.text) {
+      setInput(msg.text); // update input immediately
+    }
+  };
+
+  chrome.runtime.onMessage.addListener(listener);
+
+  return () => {
+    chrome.runtime.onMessage.removeListener(listener);
+  };
+}, []);
+
+
   useEffect(() => {
     if (input && targetLang && targetLang !== "Detect language") {
       chrome.runtime.sendMessage(

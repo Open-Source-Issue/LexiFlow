@@ -14,6 +14,15 @@ export default defineManifest({
     "tabs",
   ],
 
+  commands: {
+    "open-popup-shortcut": {
+      suggested_key: {
+        default: "Ctrl+Q"
+      },
+      description: "Open LexiFlow popup"
+    }
+},
+
   background: {
     service_worker: "src/background.ts",
   },

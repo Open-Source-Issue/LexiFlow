@@ -34,9 +34,9 @@ const GeneralSettings = () => {
 
 
 
-useEffect(()=> {
+  useEffect(() => {
     console.log("Target language changed to:", targetLang);
-},[targetLang])
+  }, [targetLang])
 
   // Local fallback for other toggles
   const [toggles, setToggles] = useState({
@@ -47,7 +47,7 @@ useEffect(()=> {
     fullPagePopup: true,
     autoClosePanel: true,
   });
-  
+
   const handleToggle = (key: keyof typeof toggles, value: boolean) => {
     setToggles((prev) => ({ ...prev, [key]: value }));
   };
@@ -85,118 +85,235 @@ useEffect(()=> {
     switch (activeSettingsTab) {
       case "translator":
         return (
-          <div className="space-y-8">
+
+          <div className="space-y-10">
+
             <div>
+
               <label className="block text-sm font-medium text-gray-700 mb-1">
+
                 Translate selected text into
+
               </label>
+
               <select
+
                 className="w-1/3 p-2 border border-gray-300 rounded-md outline-0"
+
                 value={sourceLang}
+
                 onChange={(e) => setSourceLang(e.target.value)}
+
               >
+
                 {languages.map((lang) => (
+
                   <option key={lang.code} value={lang.code}>
+
                     {lang.name}
+
                   </option>
+
                 ))}
+
               </select>
+
             </div>
+
             <div>
+
               <label className="block text-sm font-medium text-gray-700 mb-1">
+
                 Translate your writing into
+
               </label>
+
               <select
+
                 className="w-1/3 p-2 border border-gray-300 rounded-md outline-0"
+
                 value={targetLang}
+
                 onChange={(e) => setTargetLang(e.target.value)}
+
               >
+
                 {languages.map((lang) => (
+
                   <option key={lang.code} value={lang.code}>
+
                     {lang.name}
+
                   </option>
+
                 ))}
+
               </select>
+
             </div>
+
             <div className="space-y-2">
+
               <div className="flex items-center">
+
                 <ToggleSwitch
+
                   checked={clickIcon}
+
                   onChange={setClickIcon}
-                  label="Click the LexiFlow icon"
+
+                  label="Enable or Disable the Floating Icon Feature"
+
                   disabled={loading}
+
+                  settingKey="popupOnSelect"
+
                 />
+
               </div>
+
               <div className="flex items-center">
+
                 <ToggleSwitch
+
                   checked={rightClick}
+
                   onChange={setRightClick}
-                  label="Click right on your mouse"
+
+                  label="Enable or Disable Sidepanel Right-Click Translation"
+
                   disabled={loading}
+
                 />
+
               </div>
+
               <div className="flex items-center">
+
                 <ToggleSwitch
+
                   checked={shortcut}
+
                   onChange={setShortcut}
+
                   label={
+
                     <span>
+
                       Use shortcut{" "}
+
                       <span className="bg-gray-200 px-2 py-1 rounded">Ctrl</span> +{" "}
+
                       <span className="bg-gray-200 px-2 py-1 rounded">Shift</span> +{" "}
-                      <span className="bg-gray-200 px-2 py-1 rounded">Y</span>
+
+                      <span className="bg-gray-200 px-2 py-1 rounded">Q</span>
+
                     </span>
+
                   }
+
                   disabled={loading}
+
+                  settingKey="shortcutPopup"
+
                 />
+
               </div>
+
               <button className="text-sm text-blue-600 hover:underline">
+
                 Change your shortcut here
+
               </button>
+
             </div>
+
             <div>
+
               <label className="block text-sm font-medium text-gray-700 mb-1">
+
                 Adjust window to
+
               </label>
+
               <div className="relative">
+
                 <button
+
                   onClick={() =>
+
                     setShowWindowPositionList(!showWindowPositionList)
+
                   }
+
                   className="w-1/3 p-2 border border-gray-300 rounded-md text-left flex justify-between items-center"
+
                 >
+
                   {windowPosition}
+
                   <svg
+
                     className="h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
+
+                    xmlns=" http://www.w3.org/2000/svg "
+
                     viewBox="0 0 20 20"
+
                     fill="currentColor"
+
                   >
+
                     <path
+
                       fillRule="evenodd"
+
                       d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+
                       clipRule="evenodd"
+
                     />
+
                   </svg>
+
                 </button>
+
                 {showWindowPositionList && (
+
                   <div className="absolute z-10 mt-1 w-1/3 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+
                     <ul>
+
                       {windowPositions.map((position) => (
+
                         <li
+
                           key={position}
+
                           className="p-2 hover:bg-gray-100 cursor-pointer"
+
                           onClick={() => handleWindowPositionChange(position)}
+
                         >
+
                           {position}
+
                         </li>
+
                       ))}
+
                     </ul>
+
                   </div>
+
                 )}
+
               </div>
+
             </div>
+
           </div>
+
         );
       case "write":
         return (
@@ -496,31 +613,28 @@ useEffect(()=> {
       <div className="flex border-b mb-6">
         <button
           onClick={() => setActiveSettingsTab("translator")}
-          className={`py-2 px-4 text-sm font-medium ${
-            activeSettingsTab === "translator"
+          className={`py-2 px-4 text-sm font-medium ${activeSettingsTab === "translator"
               ? "border-b-2 border-pink-500 text-pink-600"
               : "text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           Translator
         </button>
         <button
           onClick={() => setActiveSettingsTab("write")}
-          className={`py-2 px-4 text-sm font-medium ${
-            activeSettingsTab === "write"
+          className={`py-2 px-4 text-sm font-medium ${activeSettingsTab === "write"
               ? "border-b-2 border-pink-500 text-pink-600"
               : "text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           Write
         </button>
         <button
           onClick={() => setActiveSettingsTab("full-page")}
-          className={`py-2 px-4 text-sm font-medium ${
-            activeSettingsTab === "full-page"
+          className={`py-2 px-4 text-sm font-medium ${activeSettingsTab === "full-page"
               ? "border-b-2 border-pink-500 text-pink-600"
               : "text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           Full page translation
         </button>

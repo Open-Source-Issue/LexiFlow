@@ -3,7 +3,7 @@ import { languages } from "../utils/languages";
 
 interface PopupProps {
   selectedText?: string;
-  onClose: () => void;
+  onClose?: () => void;
   initialPosition?: { x: number; y: number };
 }
 

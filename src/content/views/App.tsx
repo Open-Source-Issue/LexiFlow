@@ -1,18 +1,32 @@
 import { useState, useEffect } from "react";
 import Popup from "./Popup";
 import "./App.css";
+import { useLexiFlowSettings } from "../../context/LexiFlowSettingsContext";
 
 function App() {
   const [showButton, setShowButton] = useState(false);
   const [selectedText, setSelectedText] = useState("");
-  const [buttonPosition, setButtonPosition] = useState<{
+  const [buttonPosition, setButtonPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
+
+  // ✅ For shortcut-triggered popup
+  const [shortcutPopup, setShortcutPopup] = useState<{
+    text: string;
     x: number;
     y: number;
   } | null>(null);
-  const [showPopup, setShowPopup] = useState(false);
 
+  const { settings } = useLexiFlowSettings();
+
+  // --- Selection-based popup ---
   useEffect(() => {
     const handleSelection = () => {
+      if (!settings.popupOnSelect) {
+        setShowButton(false);
+        setSelectedText("");
+        return;
+      }
+
       const selection = window.getSelection();
       if (selection && selection.toString().trim()) {
         setSelectedText(selection.toString());
@@ -28,11 +42,10 @@ function App() {
         setSelectedText("");
       }
     };
+
     document.addEventListener("mouseup", handleSelection);
-    return () => {
-      document.removeEventListener("mouseup", handleSelection);
-    };
-  }, []);
+    return () => document.removeEventListener("mouseup", handleSelection);
+  }, [settings.popupOnSelect]);
 
   const handleButtonClick = () => {
     setShowPopup(true);
@@ -41,11 +54,36 @@ function App() {
 
   const handleClosePopup = () => {
     setShowPopup(false);
+    setShortcutPopup(null); // also closes shortcut popup
   };
+
+  // --- Listen for shortcut command from background ---
+  useEffect(() => {
+    const listener = (msg: any) => {
+      if (msg.action === "openPopupFromShortcut") {
+        const selection = window.getSelection();
+        if (!selection) return;
+        const text = selection?.toString().trim() || "";
+        if (!text) return;
+
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setShortcutPopup({
+          text,
+          x: rect.right + window.scrollX,
+          y: rect.top + window.scrollY,
+        });
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
+  }, []);
 
   return (
     <div>
-      {showButton && buttonPosition && (
+      {/* Selection-based button */}
+      {settings.popupOnSelect && showButton && buttonPosition && (
         <button
           style={{
             position: "absolute",
@@ -103,11 +141,22 @@ function App() {
           </span>
         </button>
       )}
-      {showPopup && buttonPosition && (
+
+      {/* Selection popup */}
+      {settings.popupOnSelect && showPopup && buttonPosition && (
         <Popup
           selectedText={selectedText}
           onClose={handleClosePopup}
           initialPosition={buttonPosition}
+        />
+      )}
+
+      {/* Shortcut popup (independent of toggle) */}
+      {settings.shortcutPopup && shortcutPopup && (
+        <Popup
+          selectedText={shortcutPopup.text}
+          onClose={handleClosePopup}
+          initialPosition={{ x: shortcutPopup.x, y: shortcutPopup.y }}
         />
       )}
     </div>

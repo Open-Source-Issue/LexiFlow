@@ -4,7 +4,7 @@ interface LexiFlowSettingsContextProps {
   clickIcon: boolean;
   setClickIcon: (val: boolean) => void;
   rightClick: boolean;
-  setRightClick: (val: boolean) => void;  
+  setRightClick: (val: boolean) => void;
   shortcut: boolean;
   setShortcut: (val: boolean) => void;
   loading: boolean;
@@ -49,13 +49,14 @@ export const LexiFlowSettingsProvider: React.FC<{
   const [sourceLang, setSourceLangState] = useState("en");
   const [targetLang, setTargetLangState] = useState("en");
   const [improveLang, setImproveLangState] = useState("en");
+
   const [loading, setLoading] = useState(true);
 
   // ✅ NEW: feature toggles (for toggle switches in popup/options)
   const [settings, setSettings] = useState<Record<string, boolean>>({
-    darkMode: false,
-    notifications: true,
-    glossaryEnabled: false,
+    popupOnSelect: true, // selection-based popup
+    sidePanelOnRightClick: true, // right-click sidepanel
+    shortcutPopup: true, // 👈 NEW toggle for Ctrl+Shift+Y popup
   });
 
   // Debug: log state changes
@@ -116,8 +117,7 @@ export const LexiFlowSettingsProvider: React.FC<{
       }
     }
     chrome.storage.onChanged.addListener(handleStorageChange);
-    return () =>
-      chrome.storage.onChanged.removeListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
   // Save to chrome.storage on change

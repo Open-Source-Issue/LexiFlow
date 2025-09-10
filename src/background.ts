@@ -1,19 +1,16 @@
 // background.ts
 // Handles translation requests via Google GenAI Translate API
 
-// byterover-retrieve-knowledge: Checked user instructions and context. Always use byterover-retrieve-knowledge before tasks and byterover-store-knowledge after successful tasks. User wants to always use 'gemini-1.5-flash' for translation if available.
-
 import { languages } from "./utils/languages";
 
 console.log("Initializing background translation script...");
 
-const GOOGLE_GENAI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GOOGLE_GENAI_API_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
 
 async function getApiKey(): Promise<string | null> {
-  console.log("Fetching API key from chrome.storage...");
   return new Promise((resolve) => {
     chrome.storage.local.get("genai_api_key", (result) => {
-      console.log("API key fetch result:", result);
       resolve(result.genai_api_key || null);
     });
   });
@@ -29,8 +26,11 @@ async function listModels(apiKey: string): Promise<any> {
 }
 
 // Always use 'gemini-1.5-flash' if available for translation
-async function translateText(text: string, sourceLang: string, targetLang: string): Promise<string> {
-  console.log("Starting translation for text:", text, "from", sourceLang, "to", targetLang);
+async function translateText(
+  text: string,
+  sourceLang: string,
+  targetLang: string
+): Promise<string> {
   const apiKey = await getApiKey();
   if (!apiKey) {
     console.error("API key not found");
@@ -39,19 +39,17 @@ async function translateText(text: string, sourceLang: string, targetLang: strin
 
   // List models and check for 'gemini-1.5-flash'
   const models = await listModels(apiKey);
-  console.log("Models fetched:", models);
-  const flashModel = models?.models?.find((m: any) => m.name === "models/gemini-1.5-flash");
-  console.log("'gemini-1.5-flash' model found:", flashModel);
+  const flashModel = models?.models?.find(
+    (m: any) => m.name === "models/gemini-1.5-flash"
+  );
+  if (!flashModel) throw new Error("gemini-1.5-flash model not available");
 
-  // Get language names for prompt using languages array
-  const sourceLangObj = languages.find(l => l.code === sourceLang);
-  const targetLangObj = languages.find(l => l.code === targetLang);
-  console.log("Source language object:", sourceLangObj);
-  console.log("Target language object:", targetLangObj);
+  // Get language names for prompt
+  const sourceLangObj = languages.find((l) => l.code === sourceLang);
+  const targetLangObj = languages.find((l) => l.code === targetLang);
   const sourceLangName = sourceLangObj ? sourceLangObj.name : sourceLang;
   const targetLangName = targetLangObj ? targetLangObj.name : targetLang;
 
-  // Use the prompt format provided by user
   const prompt = `For the following text: "${text}"
 
 Please provide the translation from ${sourceLangName} to ${targetLangName} in a JSON format like this, without any markdown formatting:
@@ -92,20 +90,15 @@ Please provide the translation from ${sourceLangName} to ${targetLangName} in a 
   } else {
     console.log("No candidates found in response.");
   }
-  // byterover-store-knowledge: Store translation API response and extracted JSON for debugging
   return result;
 }
 
-// byterover-retrieve-knowledge: Setting the API key permanently in chrome.storage.local at extension startup
+// 🗝️ Set API key placeholder once on install
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.set({ genai_api_key: "AIzaSyCEWFlAmzu67pkanxJEO2ki55CnmQY3giA" });
+});
 
-chrome.storage.local.set(
-  { genai_api_key: "" },
-  () => {
-    console.log("API key set permanently in chrome.storage.local.");
-    // byterover-store-knowledge: Store info about API key being set
-  }
-);
-
+// 📩 Listen for translation requests
 chrome.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
   console.log("Received message:", msg);
   if (msg.action === "translate") {
@@ -122,28 +115,70 @@ chrome.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "lexiflow-sidepanel",
-    title: "Lexiflow: translate and write with AI",
-    contexts: ["selection"], // Show when user selects text
-  });
+/* ---------------- 📑 Context Menu (toggle support) ---------------- */
+function createContextMenu() {
+  chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
-    id: "google-translate-ai",
+      id: "lexiflow-sidepanel",
+      title: "Lexiflow: translate and write with AI",
+    contexts: ["selection"], // Show when user selects text
+    });
+      chrome.contextMenus.create({
+      id: "google-translate-ai",
     title: "google: translate and write with AI",
     contexts: ["selection"], // Show when user selects text
   });
+  });
+}
+
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.get("rightClick", (result) => {
+    if (result.rightClick) {
+      createContextMenu();
+    }
+  });
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "sync" && changes.rightClick) {
+    if (changes.rightClick.newValue) {
+      createContextMenu();
+    } else {
+      chrome.contextMenus.removeAll();
+    }
+  }
 });
 
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "lexiflow-sidepanel" && info.selectionText && tab?.id) {
-    // Store selected text in storage for sidepanel access
+    // Save text in storage (for new sidepanel mounts)
     chrome.storage.local.set({ lexiflowSelectedText: info.selectionText }, () => {
-      // Open the sidepanel for the current tab
+      // Also send message to sidepanel if it’s already open
+      chrome.runtime.sendMessage({
+        action: "updateSelectedText",
+        text: info.selectionText,
+      });
+
+      // Open the sidepanel
       if (tab?.windowId && tab?.id) {
         chrome.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
       }
     });
   }
 });
+
+//---------------- ⌨️ Keyboard Shortcut (toggle support) ----------------
+
+// 🎹 NEW: Keyboard shortcut handler
+chrome.commands.onCommand.addListener((command) => {
+  if (command === "open-popup-shortcut") {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "openPopupFromShortcut" });
+      }
+    });
+  }
+});
+
