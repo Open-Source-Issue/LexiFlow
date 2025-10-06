@@ -366,6 +366,16 @@ const Popup: React.FC<PopupProps> = ({
               <button
                 className="p-2 rounded-full hover:bg-gray-200 text-gray-500"
                 title="Play sound"
+                onClick={() => {
+                  if (translation) {
+                    chrome.runtime.sendMessage({
+                      action: "speak",
+                      text: translation,
+                      isJson: true,
+                      lang: targetLang // This already passes the correct language code
+                    });
+                  }
+                }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path

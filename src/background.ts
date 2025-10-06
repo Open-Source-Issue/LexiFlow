@@ -40,9 +40,9 @@ async function translateText(
   // List models and check for 'gemini-1.5-flash'
   const models = await listModels(apiKey);
   const flashModel = models?.models?.find(
-    (m: any) => m.name === "models/gemini-1.5-flash"
+    (m: any) => m.name === "models/gemini-2.5-flash-preview-05-20"
   );
-  if (!flashModel) throw new Error("gemini-1.5-flash model not available");
+  if (!flashModel) throw new Error("models/gemini-2.5-flash-preview-05-20 model not available");
 
   // Get language names for prompt
   const sourceLangObj = languages.find((l) => l.code === sourceLang);
@@ -95,11 +95,11 @@ Please provide the translation from ${sourceLangName} to ${targetLangName} in a 
 
 // 🗝️ Set API key placeholder once on install
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ genai_api_key: "AIzaSyCEWFlAmzu67pkanxJEO2ki55CnmQY3giA" });
+  chrome.storage.local.set({ genai_api_key: "AIzaSyA5yumOrzhK1T7a0OiPbSSPYRATFmgjy70" });
 });
 
-// 📩 Listen for translation requests
-chrome.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
+// 📩 Listen for translation requests and text-to-speech
+chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
   console.log("Received message:", msg);
   if (msg.action === "translate") {
     translateText(msg.text, msg.sourceLang, msg.targetLang)
@@ -112,6 +112,68 @@ chrome.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
         sendResponse({ translatedText: "", error: err.message });
       });
     return true; // async response
+  } else if (msg.action === "speak") {
+    try {
+      // Extract text to speak
+      let textToSpeak = msg.text;
+      
+      // If it's JSON, try to extract meaningful content
+      if (msg.isJson) {
+        try {
+          const parsed = JSON.parse(msg.text);
+          if (parsed.meaning) {
+            textToSpeak = parsed.meaning;
+            // Add example if available
+            if (parsed.examples && parsed.examples.target) {
+              textToSpeak += ". " + parsed.examples.target;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse JSON for speech:", e);
+        }
+      }
+      
+      // Send message to content script to speak the text
+      if (sender.tab?.id) {
+        // If the request came from a content script, send it back to the same tab
+        chrome.tabs.sendMessage(
+          sender.tab.id,
+          { 
+            action: "speakText", 
+            text: textToSpeak,
+            lang: msg.lang || 'en-US'
+          },
+          (response) => {
+            sendResponse({ success: true, ...response });
+          }
+        );
+      } else {
+        // If the request came from popup or sidepanel, get the active tab and send it there
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id) {
+            chrome.tabs.sendMessage(
+              tabs[0].id,
+              { 
+                action: "speakText", 
+                text: textToSpeak,
+                lang: msg.lang || 'en-US'
+              },
+              (response) => {
+                sendResponse({ success: true, ...response });
+              }
+            );
+          } else {
+            sendResponse({ success: false, error: "No active tab found" });
+          }
+        });
+      }
+      
+      return true; // async response
+    } catch (err) {
+      console.error("Speech synthesis error:", err);
+      sendResponse({ success: false, error: (err as Error).message });
+      return true;
+    }
   }
 });
 
