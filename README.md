@@ -50,3 +50,29 @@ npm run build
 - The CRXJS plugin automatically handles manifest generation
 - Content scripts should be placed in `src/content/`
 - Popup UI should be placed in `src/popup/`
+
+## Authentication (Clerk)
+
+This project integrates Clerk for authentication in the popup, sidepanel, and options pages using `@clerk/chrome-extension`.
+
+Setup:
+
+1. Install deps (already added):
+   - `@clerk/chrome-extension`
+2. Create a Clerk application and copy your Publishable Key.
+3. Expose the key to Vite via an env var named `VITE_CLERK_PUBLISHABLE_KEY`.
+
+On Windows PowerShell:
+
+```bash
+$env:VITE_CLERK_PUBLISHABLE_KEY="pk_test_xxx"
+npm run dev
+```
+
+On Unix shells:
+
+```bash
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxx npm run dev
+```
+
+The UI will show a "Log in" button in the sidepanel and Glossary settings when signed out, and a `UserButton` when signed in. Sign-in is opened in a popup.

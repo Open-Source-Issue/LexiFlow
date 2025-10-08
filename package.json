@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/chrome-extension": "^1.0.0",
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/postcss": "^4.1.12",
     "dotenv": "^17.2.2",

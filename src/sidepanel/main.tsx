@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { LexiFlowSettingsProvider } from "../context/LexiFlowSettingsContext";
+import { ClerkProvider } from '@clerk/chrome-extension'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <LexiFlowSettingsProvider>
-      <App />
-    </LexiFlowSettingsProvider>
+    <ClerkProvider publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}>
+      <LexiFlowSettingsProvider>
+        <App />
+      </LexiFlowSettingsProvider>
+    </ClerkProvider>
   </StrictMode>,
 )
