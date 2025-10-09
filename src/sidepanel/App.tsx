@@ -4,11 +4,13 @@ import { languages } from "@/utils/languages";
 import { useLexiFlowSettings } from "../context/LexiFlowSettingsContext"; // <-- Import context
 import "./App.css";
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/chrome-extension'
+import Dashboard from "../components/Dashboard";
 
 export default function App() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
+  const [currentView, setCurrentView] = useState<'main' | 'dashboard'>('main');
 
   // Use global context for language selection
   const {
@@ -76,6 +78,31 @@ useEffect(() => {
     }
   };
 
+  const handleDashboardClick = () => {
+    setCurrentView('dashboard');
+  };
+
+  const handleBackToMain = () => {
+    setCurrentView('main');
+  };
+
+  // Support direct navigation to Dashboard via URL hash
+  useEffect(() => {
+    const applyHashRoute = () => {
+      if (window.location.hash === '#dashboard') {
+        setCurrentView('dashboard');
+      }
+    };
+    applyHashRoute();
+    window.addEventListener('hashchange', applyHashRoute);
+    return () => window.removeEventListener('hashchange', applyHashRoute);
+  }, []);
+
+  // Show dashboard if user is signed in and dashboard view is selected
+  if (currentView === 'dashboard') {
+    return <Dashboard onBackToMain={handleBackToMain} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 flex flex-col font-sans">
       {/* Top Bar */}
@@ -92,7 +119,15 @@ useEffect(() => {
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <UserButton />
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleDashboardClick}
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Dashboard
+              </button>
+              <UserButton />
+            </div>
           </SignedIn>
           <button
             className="p-2 rounded-lg hover:bg-gray-100 transition"

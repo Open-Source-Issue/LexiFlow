@@ -8,7 +8,11 @@ import { ClerkProvider } from '@clerk/chrome-extension'
 const rootElement = document.getElementById("root");
 if (rootElement) {
   createRoot(rootElement).render(
-    <ClerkProvider publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}>
+    <ClerkProvider 
+      publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}
+      signInUrl="/dashboard"
+      signUpUrl="/dashboard"
+    >
       <SettingsPage />
     </ClerkProvider>
   );

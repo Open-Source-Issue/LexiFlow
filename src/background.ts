@@ -112,6 +112,37 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
         sendResponse({ translatedText: "", error: err.message });
       });
     return true; // async response
+  } else if (msg.action === "openDashboard") {
+    // If invoked from options page (GlossarySettings), open Dashboard in a new tab instead of side panel
+    if (sender.url && sender.url.includes("options.html")) {
+      const url = chrome.runtime.getURL("src/sidepanel/index.html#dashboard");
+      chrome.tabs.create({ url });
+    } else {
+      // Default behavior: open sidepanel with dashboard for the current webpage tab
+      if (sender.tab?.windowId) {
+        chrome.sidePanel.open({ windowId: sender.tab.windowId });
+      } else {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const activeTab = tabs[0];
+          const isExtensionTab = !!activeTab?.url && activeTab.url.startsWith("chrome-extension://");
+          if (activeTab?.id && !isExtensionTab) {
+            chrome.sidePanel.open({ tabId: activeTab.id });
+            return;
+          }
+          chrome.tabs.query({ currentWindow: true }, (allTabs) => {
+            const webTab = allTabs.find((t) => !!t.id && !!t.url && /^https?:\/\//.test(t.url));
+            if (webTab?.id) {
+              chrome.sidePanel.open({ tabId: webTab.id });
+              return;
+            }
+            chrome.tabs.create({ url: "https://example.com" }, (newTab) => {
+              if (newTab?.id) chrome.sidePanel.open({ tabId: newTab.id });
+            });
+          });
+        });
+      }
+    }
+    sendResponse({ success: true });
   } else if (msg.action === "speak") {
     try {
       // Extract text to speak
@@ -176,6 +207,9 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
     }
   }
 });
+
+
+
 
 /* ---------------- 📑 Context Menu (toggle support) ---------------- */
 function createContextMenu() {

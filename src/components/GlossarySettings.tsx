@@ -15,9 +15,20 @@ const GlossarySettings = () => {
         </SignInButton>
       </SignedOut>
       <SignedIn>
-        <div className="flex items-center justify-center gap-3">
-          <span className="text-sm text-gray-700">You're signed in</span>
-          <UserButton />
+        <div className="flex flex-col items-center justify-center gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-700">You're signed in</span>
+            <UserButton />
+          </div>
+          <button 
+            onClick={() => {
+              // Navigate to dashboard in sidepanel
+              chrome.runtime.sendMessage({ action: 'openDashboard' });
+            }}
+            className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+          >
+            Go to Dashboard →
+          </button>
         </div>
       </SignedIn>
     </div>

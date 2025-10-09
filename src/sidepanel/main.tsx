@@ -7,7 +7,11 @@ import { ClerkProvider } from '@clerk/chrome-extension'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}>
+    <ClerkProvider 
+      publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}
+      signInUrl="/dashboard"
+      signUpUrl="/dashboard"
+    >
       <LexiFlowSettingsProvider>
         <App />
       </LexiFlowSettingsProvider>
