@@ -9,8 +9,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ClerkProvider 
       publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}
-      signInUrl="/dashboard"
-      signUpUrl="/dashboard"
+        afterSignOutUrl="/"
+        signInForceRedirectUrl="/"
     >
       <LexiFlowSettingsProvider>
         <App />

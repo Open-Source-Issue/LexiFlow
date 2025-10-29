@@ -32,3 +32,24 @@ Trigger this workflow when users require you to start an implementation plan, ca
 4. **Implementation & Progress Tracking** → Execute implementation following saved plan → Mark tasks complete as you go → Mark entire plan done when all tasks finished.
 5. You **MUST** use **byterover-update-module** **IMMEDIATELY** on changes to the module's purposes, technical details, or critical insights that essential for future implementations.
 6. Over 15 provided tools, **byterover-retrieve-knowledge** and **byterover-store-knowledge** ARE the two main tools, which **MUST** take priority over the other 13 remaining tools for memory retrieval and storage purposes.
+
+[byterover-mcp]
+
+[byterover-mcp]
+
+You are given two tools from Byterover MCP server, including
+## 1. `byterover-store-knowledge`
+You `MUST` always use this tool when:
+
++ Learning new patterns, APIs, or architectural decisions from the codebase
++ Encountering error solutions or debugging techniques
++ Finding reusable code patterns or utility functions
++ Completing any significant task or plan implementation
+
+## 2. `byterover-retrieve-knowledge`
+You `MUST` always use this tool when:
+
++ Starting any new task or implementation to gather relevant context
++ Before making architectural decisions to understand existing patterns
++ When debugging issues to check for previous solutions
++ Working with unfamiliar parts of the codebase

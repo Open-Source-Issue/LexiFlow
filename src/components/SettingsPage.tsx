@@ -44,7 +44,7 @@ const SettingsPage = () => {
           <button
             onClick={() => {
               setActiveTab("#general");
-              window.location.hash = "#general";
+              window.location.hash = "#general"; 
             }}
             className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
               activeTab === "#general"

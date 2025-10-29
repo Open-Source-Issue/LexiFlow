@@ -37,6 +37,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onBackToMain }) => {
     { name: 'Usage Analytics', icon: ChartBarIcon, color: 'bg-purple-500', href: '#' },
   ];
 
+  const handleUpgradeClick = () => {
+    try {
+      chrome.storage.sync.get('stripePaymentLink', (result) => {
+        const link = result?.stripePaymentLink as string | undefined;
+        const url = link && typeof link === 'string' && link.startsWith('http')
+          ? link
+          : 'https://stripe.com/payments/checkout'; // fallback placeholder; replace with your Payment Link
+
+        // Open checkout/payment link in a new tab
+        chrome.tabs.create({ url });
+      });
+    } catch (e) {
+      // Fallback if chrome APIs are not available
+      const url = 'https://stripe.com/payments/checkout';
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -155,7 +173,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBackToMain }) => {
                   <p className="text-indigo-100 text-sm">Unlock advanced features</p>
                 </div>
               </div>
-              <button className="mt-4 w-full bg-white text-indigo-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors">
+              <button onClick={handleUpgradeClick} className="mt-4 w-full bg-white text-indigo-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors">
                 Upgrade Now
               </button>
             </div>

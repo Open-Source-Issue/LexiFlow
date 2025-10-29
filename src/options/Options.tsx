@@ -10,8 +10,8 @@ if (rootElement) {
   createRoot(rootElement).render(
     <ClerkProvider 
       publishableKey={"pk_test_bWVycnktamFndWFyLTY0LmNsZXJrLmFjY291bnRzLmRldiQ"}
-      signInUrl="/dashboard"
-      signUpUrl="/dashboard"
+      afterSignOutUrl="/options.html#glossary"
+      signInForceRedirectUrl="/options.html#glossary"
     >
       <SettingsPage />
     </ClerkProvider>
