@@ -5,8 +5,6 @@ import { useLexiFlowSettings } from "../context/LexiFlowSettingsContext";
 
 const GeneralSettings = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState("translator");
-  const [showLanguageList, setShowLanguageList] = useState(false);
-  const [excludedLanguages, setExcludedLanguages] = useState<string[]>([]);
   const [showAutoTranslateList, setShowAutoTranslateList] = useState(false);
   const [autoTranslateLanguages, setAutoTranslateLanguages] = useState<
     string[]
@@ -36,7 +34,40 @@ const GeneralSettings = () => {
     setTargetLang,
     improveLang,
     setImproveLang,
+    fullPageTargetLang,
+    setFullPageTargetLang,
+    showFullPagePopup,
+    setShowFullPagePopup,
+    autoCloseSidePanel,
+    setAutoCloseSidePanel,
+    excludedSites,
+    setExcludedSites,
+    excludedLanguages,
+    setExcludedLanguages,
   } = useLexiFlowSettings();
+
+  const [showLanguageList, setShowLanguageList] = useState(false);
+
+  const handleAddSite = (site: string) => {
+    if (site && !excludedSites.includes(site)) {
+      setExcludedSites([...excludedSites, site]);
+    }
+  };
+
+  const handleRemoveSite = (site: string) => {
+    setExcludedSites(excludedSites.filter((s) => s !== site));
+  };
+
+  const handleAddLanguage = (langCode: string) => {
+    if (!excludedLanguages.includes(langCode)) {
+      setExcludedLanguages([...excludedLanguages, langCode]);
+    }
+    setShowLanguageList(false);
+  };
+
+  const handleRemoveLanguage = (langCode: string) => {
+    setExcludedLanguages(excludedLanguages.filter((l) => l !== langCode));
+  };
 
   useEffect(() => {
     console.log("Target language changed to:", targetLang);
@@ -54,17 +85,6 @@ const GeneralSettings = () => {
 
   const handleToggle = (key: keyof typeof toggles, value: boolean) => {
     setToggles((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleAddLanguage = (langCode: string) => {
-    if (!excludedLanguages.includes(langCode)) {
-      setExcludedLanguages([...excludedLanguages, langCode]);
-    }
-    setShowLanguageList(false);
-  };
-
-  const handleRemoveLanguage = (langCode: string) => {
-    setExcludedLanguages(excludedLanguages.filter((code) => code !== langCode));
   };
 
   const handleAutoAddLanguage = (langCode: string) => {
@@ -92,7 +112,7 @@ const GeneralSettings = () => {
           <div className="space-y-10">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Translate selected text into
+                Translate your writing from
               </label>
 
               <select
@@ -322,8 +342,8 @@ const GeneralSettings = () => {
               </label>
               <select
                 className="w-1/3 p-2 border border-gray-300 rounded-md"
-                value={targetLang}
-                onChange={(e) => setTargetLang(e.target.value)}
+                value={fullPageTargetLang}
+                onChange={(e) => setFullPageTargetLang(e.target.value)}
                 disabled={loading}
               >
                 {languages.map((lang) => (
@@ -333,56 +353,67 @@ const GeneralSettings = () => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">
-                  Show full-page translation pop-up
-                </h4>
-                <p className="text-sm text-gray-500">
-                  The pop-up shown when it is possible to translate an entire
-                  web page.
-                </p>
-              </div>
+
+            <div className="space-y-2">
               <ToggleSwitch
-                checked={toggles.fullPagePopup}
-                onChange={(val: boolean) => handleToggle("fullPagePopup", val)}
+                checked={showFullPagePopup}
+                onChange={setShowFullPagePopup}
+                label="Show full-page translation pop-up"
+                disabled={loading}
+              />
+              <ToggleSwitch
+                checked={autoCloseSidePanel}
+                onChange={setAutoCloseSidePanel}
+                label="Auto-close side panel after translation"
+                disabled={loading}
               />
             </div>
-            <div className="border border-gray-300 rounded-md p-4 flex items-center justify-around">
-              <div className="w-1/3 h-12 bg-gray-200 border border-gray-300"></div>
-              <div className="w-1/3 h-12 bg-gray-200 border border-gray-300"></div>
-              <div className="w-1/3 h-12 bg-pink-600 border border-pink-700"></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">
-                  Auto-close the side panel after a web page is fully translated
-                </h4>
-              </div>
-              <ToggleSwitch
-                checked={toggles.autoClosePanel}
-                onChange={(val: boolean) => handleToggle("autoClosePanel", val)}
-              />
-            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Never show the full-page translation pop-up on
+                Never show the pop-up on these sites
               </label>
-              <div className="border border-gray-300 rounded-md p-2 flex items-center">
-                <span className="text-gray-400 mr-2">i</span>
-                <span className="text-gray-500">No sites added yet</span>
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  placeholder="e.g., github.com"
+                  className="w-1/3 p-2 border border-gray-300 rounded-md"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddSite(e.currentTarget.value);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {excludedSites.map((site) => (
+                  <div
+                    key={site}
+                    className="bg-gray-200 px-2 py-1 rounded-full flex items-center"
+                  >
+                    <span>{site}</span>
+                    <button
+                      onClick={() => handleRemoveSite(site)}
+                      className="ml-2 text-red-500"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Never show the full-page translation pop-up for these languages
+                Never show the pop-up for these languages
               </label>
               <div className="relative">
                 <button
                   onClick={() => setShowLanguageList(!showLanguageList)}
-                  className="border border-gray-300 rounded-md px-4 py-2 text-sm w-full text-left flex justify-between items-center"
+                  className="w-1/3 p-2 border border-gray-300 rounded-md text-left flex justify-between items-center"
                 >
-                  Add language
+                  Add a language
                   <svg
                     className="h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -397,53 +428,41 @@ const GeneralSettings = () => {
                   </svg>
                 </button>
                 {showLanguageList && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 mt-1 w-1/3 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     <ul>
-                      {languages
-                        .filter(
-                          (lang) => !excludedLanguages.includes(lang.code)
-                        )
-                        .map((lang) => (
-                          <li
-                            key={lang.code}
-                            className="p-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleAddLanguage(lang.code)}
-                          >
-                            {lang.name}
-                          </li>
-                        ))}
+                      {languages.map((lang) => (
+                        <li
+                          key={lang.code}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleAddLanguage(lang.code)}
+                        >
+                          {lang.name}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {excludedLanguages.map((code) => {
-                  const lang = languages.find((l) => l.code === code);
-                  return (
-                    <div
-                      key={code}
-                      className="bg-gray-200 rounded-full px-3 py-1 text-sm flex items-center"
+              <div className="flex flex-wrap gap-2 mt-2">
+                {excludedLanguages.map((langCode) => (
+                  <div
+                    key={langCode}
+                    className="bg-gray-200 px-2 py-1 rounded-full flex items-center"
+                  >
+                    <span>
+                      {languages.find((l) => l.code === langCode)?.name}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveLanguage(langCode)}
+                      className="ml-2 text-red-500"
                     >
-                      {lang?.name}
-                      <button
-                        onClick={() => handleRemoveLanguage(code)}
-                        className="ml-2 text-gray-600 hover:text-gray-800"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  );
-                })}
+                      &times;
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-900">
-                Reset full-page translation pop-up settings
-              </h4>
-              <button className="border border-gray-300 rounded-md px-4 py-2 text-sm">
-                Reset all
-              </button>
-            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Always translate automatically from
@@ -453,9 +472,9 @@ const GeneralSettings = () => {
                   onClick={() =>
                     setShowAutoTranslateList(!showAutoTranslateList)
                   }
-                  className="border border-gray-300 rounded-md px-4 py-2 text-sm w-full text-left flex justify-between items-center"
+                  className="w-1/3 p-2 border border-gray-300 rounded-md text-left flex justify-between items-center"
                 >
-                  Add language
+                  Add a language
                   <svg
                     className="h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -470,45 +489,51 @@ const GeneralSettings = () => {
                   </svg>
                 </button>
                 {showAutoTranslateList && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 mt-1 w-1/3 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     <ul>
-                      {languages
-                        .filter(
-                          (lang) => !autoTranslateLanguages.includes(lang.code)
-                        )
-                        .map((lang) => (
-                          <li
-                            key={lang.code}
-                            className="p-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleAutoAddLanguage(lang.code)}
-                          >
-                            {lang.name}
-                          </li>
-                        ))}
+                      {languages.map((lang) => (
+                        <li
+                          key={lang.code}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleAutoAddLanguage(lang.code)}
+                        >
+                          {lang.name}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {autoTranslateLanguages.map((code) => {
-                  const lang = languages.find((l) => l.code === code);
-                  return (
-                    <div
-                      key={code}
-                      className="bg-gray-200 rounded-full px-3 py-1 text-sm flex items-center"
+              <div className="flex flex-wrap gap-2 mt-2">
+                {autoTranslateLanguages.map((langCode) => (
+                  <div
+                    key={langCode}
+                    className="bg-gray-200 px-2 py-1 rounded-full flex items-center"
+                  >
+                    <span>
+                      {languages.find((l) => l.code === langCode)?.name}
+                    </span>
+                    <button
+                      onClick={() => handleAutoRemoveLanguage(langCode)}
+                      className="ml-2 text-red-500"
                     >
-                      {lang?.name}
-                      <button
-                        onClick={() => handleAutoRemoveLanguage(code)}
-                        className="ml-2 text-gray-600 hover:text-gray-800"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  );
-                })}
+                      &times;
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
+
+            <button
+              onClick={() => {
+                setExcludedSites([]);
+                setExcludedLanguages([]);
+                setAutoTranslateLanguages([]);
+              }}
+              className="text-sm text-red-600 hover:underline"
+            >
+              Reset all
+            </button>
           </div>
         );
       default:

@@ -102,15 +102,33 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
   console.log("Received message:", msg);
   if (msg.action === "translate") {
-    translateText(msg.text, msg.sourceLang, msg.targetLang)
-      .then((translatedText) => {
-        console.log("Sending translated text response:", translatedText);
-        sendResponse({ translatedText });
-      })
-      .catch((err) => {
-        console.error("Translation error:", err);
-        sendResponse({ translatedText: "", error: err.message });
+    // First, detect language if source is not set
+    if (msg.sourceLang === "Detect language") {
+      chrome.i18n.detectLanguage(msg.text, (result) => {
+        const detectedLang = result.languages[0]?.language || "en";
+        chrome.storage.sync.set({ sourceLang: detectedLang }, () => {
+          translateText(msg.text, detectedLang, msg.targetLang)
+            .then((translatedText) => {
+              console.log("Sending translated text response:", translatedText);
+              sendResponse({ translatedText });
+            })
+            .catch((err) => {
+              console.error("Translation error:", err);
+              sendResponse({ translatedText: "", error: err.message });
+            });
+        });
       });
+    } else {
+      translateText(msg.text, msg.sourceLang, msg.targetLang)
+        .then((translatedText) => {
+          console.log("Sending translated text response:", translatedText);
+          sendResponse({ translatedText });
+        })
+        .catch((err) => {
+          console.error("Translation error:", err);
+          sendResponse({ translatedText: "", error: err.message });
+        });
+    }
     return true; // async response
   } else if (msg.action === "openDashboard") {
     // If invoked from options page (GlossarySettings), open Dashboard in a new tab instead of side panel
@@ -205,11 +223,141 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
       sendResponse({ success: false, error: (err as Error).message });
       return true;
     }
+  } else if (msg.action === "showFullPagePopup") {
+    chrome.storage.sync.get(
+      [
+        "fullPageTranslate",
+        "fullPageTargetLang",
+        "showFullPagePopup",
+        "excludedSites",
+        "excludedLanguages",
+        "autoTranslateLangs",
+      ],
+      (settings) => {
+        const tabId = sender.tab?.id;
+        if (!tabId) return;
+
+        chrome.storage.local.get([`pageLang_${tabId}`], (result) => {
+          const pageLang = result[`pageLang_${tabId}`];
+          const pageUrl = sender.tab?.url;
+
+          if (
+            settings.fullPageTranslate &&
+            settings.showFullPagePopup &&
+            pageUrl &&
+            !settings.excludedSites.includes(new URL(pageUrl).hostname) &&
+            !settings.excludedLanguages.includes(pageLang)
+          ) {
+            // Show popup
+            chrome.tabs.sendMessage(tabId, { action: "createPopup" });
+          }
+        });
+      }
+    );
+  } else if (msg.action === "translateFullPage") {
+    const tabId = sender.tab?.id;
+    if (!tabId) return;
+
+    chrome.storage.sync.get(["fullPageTargetLang", "autoCloseSidePanel"], (settings) => {
+      if (settings.fullPageTargetLang) {
+        chrome.scripting.executeScript(
+          {
+            target: { tabId },
+            func: (targetLang) => {
+              // This is a placeholder for the actual translation logic.
+              document.body.innerHTML = `<h1>Translated to ${targetLang}</h1>`;
+            },
+            args: [settings.fullPageTargetLang],
+          },
+          () => {
+            if (settings.autoCloseSidePanel) {
+              chrome.sidePanel.setOptions({ enabled: false });
+            }
+          }
+        );
+      }
+    });
+  } else if (msg.action === "resetFullPageSettings") {
+    chrome.storage.sync.set({
+      fullPageTranslate: true,
+      fullPageTargetLang: "en",
+      showFullPagePopup: true,
+      autoCloseSidePanel: false,
+      excludedSites: [],
+      excludedLanguages: [],
+      autoTranslateLangs: [],
+    });
   }
 });
 
+// Detect page language on tab updates
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === "complete" && tab.url && tab.url.startsWith("http")) {
+    chrome.scripting.executeScript(
+      {
+        target: { tabId },
+        func: () => document.documentElement.lang || document.querySelector('meta[name="lang"]')?.getAttribute('content'),
+      },
+      (results) => {
+        if (results && results[0] && results[0].result) {
+          const detectedLang = results[0].result;
+          chrome.storage.local.set({ [`pageLang_${tabId}`]: detectedLang });
+        }
+      }
+    );
+  }
+});
 
+// Listen for content script requests to show the popup
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === "showFullPagePopup") {
+    chrome.storage.sync.get(
+      [
+        "fullPageTranslate",
+        "fullPageTargetLang",
+        "showFullPagePopup",
+        "excludedSites",
+        "excludedLanguages",
+        "autoTranslateLangs",
+      ],
+      (settings) => {
+        const tabId = sender.tab?.id;
+        if (!tabId) return;
 
+        chrome.storage.local.get([`pageLang_${tabId}`], (result) => {
+          const pageLang = result[`pageLang_${tabId}`];
+          const pageUrl = sender.tab?.url;
+
+          if (
+            settings.fullPageTranslate &&
+            settings.showFullPagePopup &&
+            pageUrl &&
+            !settings.excludedSites.includes(new URL(pageUrl).hostname) &&
+            !settings.excludedLanguages.includes(pageLang)
+          ) {
+            // Show popup
+            chrome.tabs.sendMessage(tabId, { action: "createPopup" });
+          }
+        });
+      }
+    );
+  }
+});
+
+// Listen for requests to reset full-page translation settings
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === "resetFullPageSettings") {
+    chrome.storage.sync.set({
+      fullPageTranslate: true,
+      fullPageTargetLang: "en",
+      showFullPagePopup: true,
+      autoCloseSidePanel: false,
+      excludedSites: [],
+      excludedLanguages: [],
+      autoTranslateLangs: [],
+    });
+  }
+});
 
 /* ---------------- 📑 Context Menu (toggle support) ---------------- */
 function createContextMenu() {
@@ -249,6 +397,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "lexiflow-sidepanel" && info.selectionText && tab?.id) {
+    // Detect language and save to sync storage
+    chrome.i18n.detectLanguage(info.selectionText, (result) => {
+      const detectedLang = result.languages[0]?.language || "en";
+      chrome.storage.sync.set({ sourceLang: detectedLang });
+    });
+
     // Save text in storage (for new sidepanel mounts)
     chrome.storage.local.set({ lexiflowSelectedText: info.selectionText }, () => {
       // Also send message to sidepanel if it’s already open

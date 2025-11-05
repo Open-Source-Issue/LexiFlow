@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { languages } from "../utils/languages";
+import { useLexiFlowSettings } from "../context/LexiFlowSettingsContext";
 
 interface PopupProps {
   selectedText?: string;
@@ -13,8 +14,7 @@ const Popup: React.FC<PopupProps> = ({
   initialPosition,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [sourceLang, setSourceLang] = useState("en");
-  const [targetLang, setTargetLang] = useState("hi");
+  const { sourceLang, targetLang, setTargetLang, loading } = useLexiFlowSettings();
   const [translating, setTranslating] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
   const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
@@ -225,9 +225,9 @@ const Popup: React.FC<PopupProps> = ({
       <div className="flex justify-between items-center px-6 py-6 border-gray-200 border-b-2">
         <select
           value={sourceLang}
-          onChange={(e) => setSourceLang(e.target.value)}
           className="w-1/3 border-2 rounded-sm px-3 py-2 text-sm border-t-0 border-gray-300 focus:outline-none"
         >
+          <option value="Detect language">Detect language</option>
           {languages.map((lang) => (
             <option key={lang.code} value={lang.code}>
               {lang.name}
@@ -238,7 +238,6 @@ const Popup: React.FC<PopupProps> = ({
           className="mx-2 p-2 rounded-full border border-gray-200  hover:bg-gray-200"
           title="Swap languages"
           onClick={() => {
-            setSourceLang(targetLang);
             setTargetLang(sourceLang);
           }}
         >

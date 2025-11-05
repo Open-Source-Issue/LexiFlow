@@ -15,7 +15,6 @@ export default function App() {
   // Use global context for language selection
   const {
     sourceLang,
-    setSourceLang,
     targetLang,
     setTargetLang,
     loading,
@@ -47,12 +46,12 @@ useEffect(() => {
 
 
   useEffect(() => {
-    if (input && targetLang && targetLang !== "Detect language") {
+    if (input && targetLang) {
       chrome.runtime.sendMessage(
         {
           action: "translate",
           text: input,
-          sourceLang: sourceLang === "Detect language" ? "en" : sourceLang,
+          sourceLang: sourceLang,
           targetLang: targetLang,
         },
         (response) => {
@@ -150,7 +149,6 @@ useEffect(() => {
         <select
           className="border border-gray-300 rounded-sm px-3 py-2 text-gray-700 focus:outline-none bg-gray-50 flex-1 min-w-0"
           value={sourceLang}
-          onChange={(e) => setSourceLang(e.target.value)}
           disabled={loading}
         >
           <option value="Detect language">Detect language</option>

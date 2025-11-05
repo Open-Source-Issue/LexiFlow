@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './views/App.tsx'
 import { LexiFlowSettingsProvider } from "../context/LexiFlowSettingsContext";
 import { languages } from "../utils/languages";
+import FullPageTranslationPopup from './components/FullPageTranslationPopup';
 
 console.log('[CRXJS] Hello world from content script!')
 
@@ -174,6 +175,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
     
     return true; // Indicate async response
+  } else if (msg.action === "createPopup") {
+    const popupContainer = document.createElement('div');
+    popupContainer.id = 'lexiflow-full-page-popup-container';
+    document.body.appendChild(popupContainer);
+    createRoot(popupContainer).render(<FullPageTranslationPopup />);
+    sendResponse({ status: "popup created" });
   }
 });
 
@@ -185,3 +192,6 @@ createRoot(container).render(
       <App />
     </LexiFlowSettingsProvider>
 )
+
+// Inform the background script that the content script is ready
+chrome.runtime.sendMessage({ action: "showFullPagePopup" });
