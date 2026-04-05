@@ -9,7 +9,6 @@ const GeneralSettings = () => {
   const [autoTranslateLanguages, setAutoTranslateLanguages] = useState<
     string[]
   >([]);
-  const [windowPosition, setWindowPosition] = useState("Default position");
   const [showWindowPositionList, setShowWindowPositionList] = useState(false);
   const windowPositions = [
     "Default position",
@@ -44,6 +43,8 @@ const GeneralSettings = () => {
     setExcludedSites,
     excludedLanguages,
     setExcludedLanguages,
+    windowPosition,
+    setWindowPosition,
   } = useLexiFlowSettings();
 
   const [showLanguageList, setShowLanguageList] = useState(false);
@@ -354,7 +355,7 @@ const GeneralSettings = () => {
               </select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4 flex flex-col">
               <ToggleSwitch
                 checked={showFullPagePopup}
                 onChange={setShowFullPagePopup}

@@ -78,7 +78,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onBackToMain }) => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center spaco
+            e-x-4">
               <UserButton />
             </div>
           </div>

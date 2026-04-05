@@ -5,13 +5,24 @@ import { languages } from "./utils/languages";
 
 console.log("Initializing background translation script...");
 
+function normalizeDetectedLang(detected: string | undefined | null): string {
+  if (!detected) return "en";
+  const lower = detected.toLowerCase();
+  const exact = languages.find((l) => l.code.toLowerCase() === lower);
+  if (exact) return exact.code;
+  const base = lower.split("-")[0];
+  const baseMatch = languages.find((l) => l.code.toLowerCase() === base);
+  return baseMatch ? baseMatch.code : "en";
+}
+
 const GOOGLE_GENAI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";
 
 async function getApiKey(): Promise<string | null> {
   return new Promise((resolve) => {
     chrome.storage.local.get("genai_api_key", (result) => {
-      resolve(result.genai_api_key || null);
+      const key = result.genai_api_key;
+      resolve(typeof key === 'string' ? key : null);
     });
   });
 }
@@ -105,7 +116,8 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
     // First, detect language if source is not set
     if (msg.sourceLang === "Detect language") {
       chrome.i18n.detectLanguage(msg.text, (result) => {
-        const detectedLang = result.languages[0]?.language || "en";
+        const raw = result.languages[0]?.language || "en";
+        const detectedLang = normalizeDetectedLang(raw);
         chrome.storage.sync.set({ sourceLang: detectedLang }, () => {
           translateText(msg.text, detectedLang, msg.targetLang)
             .then((translatedText) => {
@@ -245,8 +257,8 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
             settings.fullPageTranslate &&
             settings.showFullPagePopup &&
             pageUrl &&
-            !settings.excludedSites.includes(new URL(pageUrl).hostname) &&
-            !settings.excludedLanguages.includes(pageLang)
+            !(settings as any).excludedSites.includes(new URL(pageUrl).hostname) &&
+            !(settings as any).excludedLanguages.includes(pageLang)
           ) {
             // Show popup
             chrome.tabs.sendMessage(tabId, { action: "createPopup" });
@@ -309,7 +321,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // Listen for content script requests to show the popup
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.action === "showFullPagePopup") {
     chrome.storage.sync.get(
       [
@@ -332,8 +344,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             settings.fullPageTranslate &&
             settings.showFullPagePopup &&
             pageUrl &&
-            !settings.excludedSites.includes(new URL(pageUrl).hostname) &&
-            !settings.excludedLanguages.includes(pageLang)
+            !(settings as any).excludedSites.includes(new URL(pageUrl).hostname) &&
+            !(settings as any).excludedLanguages.includes(pageLang)
           ) {
             // Show popup
             chrome.tabs.sendMessage(tabId, { action: "createPopup" });
@@ -345,7 +357,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 // Listen for requests to reset full-page translation settings
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "resetFullPageSettings") {
     chrome.storage.sync.set({
       fullPageTranslate: true,
@@ -399,7 +411,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "lexiflow-sidepanel" && info.selectionText && tab?.id) {
     // Detect language and save to sync storage
     chrome.i18n.detectLanguage(info.selectionText, (result) => {
-      const detectedLang = result.languages[0]?.language || "en";
+      const raw = result.languages[0]?.language || "en";
+      const detectedLang = normalizeDetectedLang(raw);
       chrome.storage.sync.set({ sourceLang: detectedLang });
     });
 

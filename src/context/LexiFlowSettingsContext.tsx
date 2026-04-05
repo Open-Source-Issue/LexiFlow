@@ -31,6 +31,10 @@ interface LexiFlowSettingsContextProps {
   autoTranslateLangs: string[];
   setAutoTranslateLangs: (langs: string[]) => void;
 
+  // Popup window placement
+  windowPosition: string;
+  setWindowPosition: (val: string) => void;
+
   // ✅ NEW: Generic feature toggles
   settings: Record<string, boolean>;
   updateSetting: (key: string, value: boolean) => void;
@@ -67,6 +71,10 @@ const LexiFlowSettingsContext = createContext<LexiFlowSettingsContextProps>({
   autoTranslateLangs: [],
   setAutoTranslateLangs: () => {},
 
+  // Popup placement default
+  windowPosition: "Default position",
+  setWindowPosition: () => {},
+
   // ✅ NEW defaults
   settings: {},
   updateSetting: () => {},
@@ -90,6 +98,7 @@ export const LexiFlowSettingsProvider: React.FC<{
   const [excludedSites, setExcludedSitesState] = useState<string[]>([]);
   const [excludedLanguages, setExcludedLanguagesState] = useState<string[]>([]);
   const [autoTranslateLangs, setAutoTranslateLangsState] = useState<string[]>([]);
+  const [windowPosition, setWindowPositionState] = useState("Default position");
 
   const [loading, setLoading] = useState(true);
 
@@ -154,10 +163,12 @@ export const LexiFlowSettingsProvider: React.FC<{
           setExcludedLanguagesState(result.excludedLanguages);
         if (Array.isArray(result.autoTranslateLangs))
           setAutoTranslateLangsState(result.autoTranslateLangs);
+        if (typeof result.windowPosition === "string")
+          setWindowPositionState(result.windowPosition);
 
         // ✅ restore feature toggles
         if (result.settings && typeof result.settings === "object") {
-          setSettings(result.settings);
+          setSettings(result.settings as Record<string, boolean>);
         }
 
         setLoading(false);
@@ -192,6 +203,8 @@ export const LexiFlowSettingsProvider: React.FC<{
           setExcludedLanguagesState(changes.excludedLanguages.newValue);
         if (changes.autoTranslateLangs)
           setAutoTranslateLangsState(changes.autoTranslateLangs.newValue);
+        if (changes.windowPosition)
+          setWindowPositionState(changes.windowPosition.newValue);
 
         // ✅ sync toggles
         if (changes.settings) setSettings(changes.settings.newValue);
@@ -257,6 +270,10 @@ export const LexiFlowSettingsProvider: React.FC<{
     setAutoTranslateLangsState(langs);
     chrome.storage.sync.set({ autoTranslateLangs: langs });
   };
+  const setWindowPosition = (val: string) => {
+    setWindowPositionState(val);
+    chrome.storage.sync.set({ windowPosition: val });
+  };
 
   // ✅ NEW: update feature toggles
   const updateSetting = (key: string, value: boolean) => {
@@ -300,6 +317,8 @@ export const LexiFlowSettingsProvider: React.FC<{
         setExcludedLanguages,
         autoTranslateLangs,
         setAutoTranslateLangs,
+        windowPosition,
+        setWindowPosition,
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Popup from "./Popup";
 import "./App.css";
 import { useLexiFlowSettings } from "../../context/LexiFlowSettingsContext";
+import { languages } from "../../utils/languages";
 
 function App() {
   const [showButton, setShowButton] = useState(false);
@@ -16,7 +17,49 @@ function App() {
     y: number;
   } | null>(null);
 
-  const { settings } = useLexiFlowSettings();
+  const { settings, setSourceLang } = useLexiFlowSettings();
+
+  const normalizeDetectedLang = (detected: string | undefined | null): string | null => {
+    if (!detected) return null;
+    const lower = detected.toLowerCase();
+    const exact = languages.find((l) => l.code.toLowerCase() === lower);
+    if (exact) return exact.code;
+    const base = lower.split("-")[0];
+    const baseMatch = languages.find((l) => l.code.toLowerCase() === base);
+    return baseMatch ? baseMatch.code : null;
+  };
+
+  const pickBestDetectedLang = (
+    result: chrome.i18n.LanguageDetectionResult,
+    text: string
+  ): string | null => {
+    const isAscii = /^[\x00-\x7F]+$/.test(text);
+    // For plain ASCII text (typical English web content), always treat as English.
+    if (isAscii) return "en";
+
+    if (!result.languages || result.languages.length === 0) return null;
+
+    const candidates = result.languages
+      .filter((l) => typeof l.language === "string")
+      .map((l) => ({
+        raw: l.language,
+        normalized: normalizeDetectedLang(l.language),
+        percentage: l.percentage ?? 0,
+      }))
+      .filter((c) => c.normalized);
+
+    if (candidates.length === 0) return null;
+
+    candidates.sort((a, b) => b.percentage - a.percentage);
+
+    const top = candidates[0];
+
+    if (top.percentage >= 70) {
+      return top.normalized!;
+    }
+
+    return null;
+  };
 
   // --- Selection-based popup ---
   useEffect(() => {
@@ -28,8 +71,17 @@ function App() {
       }
 
       const selection = window.getSelection();
-      if (selection && selection.toString().trim()) {
-        setSelectedText(selection.toString());
+      const text = selection?.toString().trim() || "";
+      if (selection && text) {
+        setSelectedText(text);
+        if (typeof chrome !== "undefined" && chrome.i18n && chrome.i18n.detectLanguage) {
+          chrome.i18n.detectLanguage(text, (result) => {
+            const best = pickBestDetectedLang(result, text);
+            if (best) {
+              setSourceLang(best);
+            }
+          });
+        }
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
         setButtonPosition({
@@ -65,6 +117,15 @@ function App() {
         if (!selection) return;
         const text = selection?.toString().trim() || "";
         if (!text) return;
+
+        if (typeof chrome !== "undefined" && chrome.i18n && chrome.i18n.detectLanguage) {
+          chrome.i18n.detectLanguage(text, (result) => {
+            const best = pickBestDetectedLang(result, text);
+            if (best) {
+              setSourceLang(best);
+            }
+          });
+        }
 
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();

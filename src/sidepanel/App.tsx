@@ -23,7 +23,7 @@ export default function App() {
   useEffect(() => {
     chrome.storage.local.get("lexiflowSelectedText", (result) => {
       if (result.lexiflowSelectedText) {
-        setInput(result.lexiflowSelectedText);
+        setInput(result.lexiflowSelectedText as string);
         chrome.storage.local.remove("lexiflowSelectedText");
       }
     });

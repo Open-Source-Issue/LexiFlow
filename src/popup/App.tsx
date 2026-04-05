@@ -14,7 +14,7 @@ const Popup: React.FC<PopupProps> = ({
   initialPosition,
 }) => {
   const [copied, setCopied] = useState(false);
-  const { sourceLang, targetLang, setTargetLang, loading } = useLexiFlowSettings();
+  const { sourceLang, targetLang, setTargetLang } = useLexiFlowSettings();
   const [translating, setTranslating] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
   const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
