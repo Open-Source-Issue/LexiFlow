@@ -3,7 +3,7 @@ import crxLogo from "@/assets/logo1.svg";
 import { languages } from "@/utils/languages";
 import { useLexiFlowSettings } from "../context/LexiFlowSettingsContext"; // <-- Import context
 import "./App.css";
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/chrome-extension'
+import { Show, SignInButton, UserButton } from '@clerk/chrome-extension'
 import Dashboard from "../components/Dashboard";
 
 export default function App() {
@@ -110,14 +110,14 @@ useEffect(() => {
           <img src={crxLogo} alt="Logo" className="h-6" />
         </div>
         <div className="flex items-center gap-2">
-          <SignedOut>
+          <Show when="signed-out">
             <SignInButton mode="modal">
               <button className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition text-sm font-semibold shadow">
                 Log in
               </button>
             </SignInButton>
-          </SignedOut>
-          <SignedIn>
+          </Show>
+          <Show when="signed-in">
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleDashboardClick}
@@ -127,7 +127,7 @@ useEffect(() => {
               </button>
               <UserButton />
             </div>
-          </SignedIn>
+          </Show>
           <button
             className="p-2 rounded-lg hover:bg-gray-100 transition"
             title="Settings"
