@@ -1,11 +1,12 @@
 // import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
 import App from './views/App.tsx'
 import { LexiFlowSettingsProvider } from "../context/LexiFlowSettingsContext";
 import { languages } from "../utils/languages";
 import FullPageTranslationPopup from './components/FullPageTranslationPopup';
 
 console.log('[CRXJS] Hello world from content script!')
+
+import { ShadowDOMManager } from './ui/ShadowWrapper';
 
 // Listen for messages from the background script for text-to-speech
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -176,22 +177,71 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     
     return true; // Indicate async response
   } else if (msg.action === "createPopup") {
-    const popupContainer = document.createElement('div');
-    popupContainer.id = 'lexiflow-full-page-popup-container';
-    document.body.appendChild(popupContainer);
-    createRoot(popupContainer).render(<FullPageTranslationPopup />);
+    const root = ShadowDOMManager.createShadowRoot('lexiflow-full-page-popup-container');
+    root.render(<FullPageTranslationPopup />);
     sendResponse({ status: "popup created" });
   }
 });
 
-const container = document.createElement('div')
-container.id = 'crxjs-app'
-document.body.appendChild(container)
-createRoot(container).render(
+import { FieldDetectionEngine } from './core/fieldDetection';
+import Popup from './views/Popup';
+import { Root } from 'react-dom/client';
+
+// Mount the persistent App context via Shadow DOM
+const appRoot = ShadowDOMManager.createShadowRoot('lexiflow-app-container');
+appRoot.render(
     <LexiFlowSettingsProvider>
       <App />
     </LexiFlowSettingsProvider>
-)
+);
+
+let dynamicRoot: Root | null = null;
+
+// Initialize Field Detection Engine for AI Writing popup
+FieldDetectionEngine.start((element, adapter, rect) => {
+  const containerId = 'lexiflow-dynamic-floating-ui';
+  
+  if (element && adapter && rect) {
+    console.log(`[Lexiflow] Detected active field via ${adapter.name}`, rect);
+    
+    // Clean up previous if exists
+    if (dynamicRoot) {
+      dynamicRoot.unmount();
+      dynamicRoot = null;
+    }
+    document.getElementById(containerId)?.remove();
+    
+    // Determine a position (just below the element)
+    const position = {
+      x: rect.left + window.scrollX,
+      y: rect.bottom + window.scrollY + 10
+    };
+    
+    dynamicRoot = ShadowDOMManager.createShadowRoot(containerId);
+    dynamicRoot.render(
+      <LexiFlowSettingsProvider>
+        <Popup 
+          selectedText={adapter.getText(element)}
+          onClose={() => {
+             if (dynamicRoot) {
+                dynamicRoot.unmount();
+                dynamicRoot = null;
+             }
+             document.getElementById(containerId)?.remove();
+          }}
+          initialPosition={position}
+        />
+      </LexiFlowSettingsProvider>
+    );
+  } else {
+    console.log(`[Lexiflow] Field focus lost, unmounting UI`);
+    if (dynamicRoot) {
+      dynamicRoot.unmount();
+      dynamicRoot = null;
+    }
+    document.getElementById(containerId)?.remove();
+  }
+});
 
 // Inform the background script that the content script is ready
 chrome.runtime.sendMessage({ action: "showFullPagePopup" });
