@@ -15,99 +15,65 @@ function normalizeDetectedLang(detected: string | undefined | null): string {
   return baseMatch ? baseMatch.code : "en";
 }
 
-const GOOGLE_GENAI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models";
+import { LLMFactory } from "./services/llm.factory";
+import { CacheService } from "./services/cache/CacheService";
 
-async function getApiKey(): Promise<string | null> {
+const DEFAULT_PROVIDER = 'gemini';
+
+async function getApiKey(): Promise<string> {
   return new Promise((resolve) => {
     chrome.storage.local.get("genai_api_key", (result) => {
-      const key = result.genai_api_key;
-      resolve(typeof key === 'string' ? key : null);
+      resolve(typeof result.genai_api_key === 'string' ? result.genai_api_key : '');
     });
   });
 }
 
-// Utility to list available models
-async function listModels(apiKey: string): Promise<any> {
-  console.log("Listing available models with API key:", apiKey);
-  const res = await fetch(`${GOOGLE_GENAI_API_URL}?key=${apiKey}`);
-  const json = await res.json();
-  console.log("Available models response:", json);
-  return json;
-}
-
-// Always use 'gemini-1.5-flash' if available for translation
-async function translateText(
-  text: string,
-  sourceLang: string,
-  targetLang: string
-): Promise<string> {
-  const apiKey = await getApiKey();
-  if (!apiKey) {
-    console.error("API key not found");
-    throw new Error("API key not found");
-  }
-
-  // List models and check for 'gemini-1.5-flash'
-  const models = await listModels(apiKey);
-  const flashModel = models?.models?.find(
-    (m: any) => m.name === "models/gemini-2.5-flash-preview-05-20"
-  );
-  if (!flashModel) throw new Error("models/gemini-2.5-flash-preview-05-20 model not available");
-
-  // Get language names for prompt
-  const sourceLangObj = languages.find((l) => l.code === sourceLang);
-  const targetLangObj = languages.find((l) => l.code === targetLang);
-  const sourceLangName = sourceLangObj ? sourceLangObj.name : sourceLang;
-  const targetLangName = targetLangObj ? targetLangObj.name : targetLang;
-
-  const prompt = `For the following text: "${text}"
-
-Please provide the translation from ${sourceLangName} to ${targetLangName} in a JSON format like this, without any markdown formatting:
-
-{
-  "meaning": "The direct translation of the selected word/phrase",
-  "synonyms": ["Synonym 1", "Synonym 2"],
-  "examples": {
-    "source": "An example sentence in ${sourceLangName}",
-    "target": "The translation of the example sentence in ${targetLangName}"
-  }
-}
-`;
-  console.log("Translation request prompt:", prompt);
-  const url = `https://generativelanguage.googleapis.com/v1beta/${flashModel.name}:generateContent?key=${apiKey}`;
-  console.log("Translation request URL:", url);
-  const body = {
-    contents: [{ parts: [{ text: prompt }] }],
-  };
-  console.log("Translation request body:", body);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json();
-  console.log("Translation API response:", data);
-  // Extract JSON from model response text
-  let result = "";
-  if (Array.isArray(data?.candidates)) {
-    const textBlock = data.candidates[0]?.content?.parts?.[0]?.text || "";
-    console.log("Model response text block:", textBlock);
-    // Try to extract JSON from response
-    const match = textBlock.match(/\{[\s\S]*\}/);
-    result = match ? match[0] : textBlock;
-    console.log("Extracted translation result:", result);
-  } else {
-    console.log("No candidates found in response.");
-  }
-  return result;
-}
-
-// 🗝️ Set API key placeholder once on install
+// 🗝️ Initialize API key placeholder (for dev/testing, though users should set it in options)
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ genai_api_key: "AIzaSyA5yumOrzhK1T7a0OiPbSSPYRATFmgjy70" });
+  chrome.storage.local.get("genai_api_key", (result) => {
+    if (!result.genai_api_key) {
+      chrome.storage.local.set({ genai_api_key: "" });
+    }
+  });
 });
+
+async function handleTranslation(msg: any, sourceLang: string, sendResponse: (res: any) => void) {
+  try {
+    const apiKey = await getApiKey();
+    const provider = LLMFactory.createProvider(DEFAULT_PROVIDER, apiKey);
+    
+    const cacheKey = CacheService.generateKey(msg.text, msg.mode === 'refine' ? (msg.refinementMode || 'improve') : msg.mode, msg.targetLang);
+    const cached = await CacheService.get(cacheKey);
+    
+    if (cached) {
+      return sendResponse({ translatedText: cached });
+    }
+
+    if (msg.mode === 'dictionary') {
+      const res = await provider.translateDictionary({
+        text: msg.text, sourceLang, targetLang: msg.targetLang
+      });
+      const resString = JSON.stringify(res);
+      await CacheService.set(cacheKey, resString);
+      sendResponse({ translatedText: resString });
+    } else if (msg.mode === 'refine') {
+      const res = await provider.refineText(
+        msg.text, { targetLang: msg.targetLang, mode: msg.refinementMode || 'improve' }
+      );
+      await CacheService.set(cacheKey, res);
+      sendResponse({ translatedText: res });
+    } else {
+      const res = await provider.translateRaw({
+        text: msg.text, sourceLang, targetLang: msg.targetLang
+      });
+      await CacheService.set(cacheKey, res);
+      sendResponse({ translatedText: res });
+    }
+  } catch (err: any) {
+    console.error("Translation error:", err);
+    sendResponse({ translatedText: "", error: err.message });
+  }
+}
 
 // 📩 Listen for translation requests and text-to-speech
 chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
@@ -118,28 +84,11 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
       chrome.i18n.detectLanguage(msg.text, (result) => {
         const raw = result.languages[0]?.language || "en";
         const detectedLang = normalizeDetectedLang(raw);
-        chrome.storage.sync.set({ sourceLang: detectedLang }, () => {
-          translateText(msg.text, detectedLang, msg.targetLang)
-            .then((translatedText) => {
-              console.log("Sending translated text response:", translatedText);
-              sendResponse({ translatedText });
-            })
-            .catch((err) => {
-              console.error("Translation error:", err);
-              sendResponse({ translatedText: "", error: err.message });
-            });
-        });
+        chrome.storage.sync.set({ sourceLang: detectedLang });
+        handleTranslation(msg, detectedLang, sendResponse);
       });
     } else {
-      translateText(msg.text, msg.sourceLang, msg.targetLang)
-        .then((translatedText) => {
-          console.log("Sending translated text response:", translatedText);
-          sendResponse({ translatedText });
-        })
-        .catch((err) => {
-          console.error("Translation error:", err);
-          sendResponse({ translatedText: "", error: err.message });
-        });
+      handleTranslation(msg, msg.sourceLang, sendResponse);
     }
     return true; // async response
   } else if (msg.action === "openDashboard") {
@@ -320,56 +269,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// Listen for content script requests to show the popup
-chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.action === "showFullPagePopup") {
-    chrome.storage.sync.get(
-      [
-        "fullPageTranslate",
-        "fullPageTargetLang",
-        "showFullPagePopup",
-        "excludedSites",
-        "excludedLanguages",
-        "autoTranslateLangs",
-      ],
-      (settings) => {
-        const tabId = sender.tab?.id;
-        if (!tabId) return;
 
-        chrome.storage.local.get([`pageLang_${tabId}`], (result) => {
-          const pageLang = result[`pageLang_${tabId}`];
-          const pageUrl = sender.tab?.url;
 
-          if (
-            settings.fullPageTranslate &&
-            settings.showFullPagePopup &&
-            pageUrl &&
-            !(settings as any).excludedSites.includes(new URL(pageUrl).hostname) &&
-            !(settings as any).excludedLanguages.includes(pageLang)
-          ) {
-            // Show popup
-            chrome.tabs.sendMessage(tabId, { action: "createPopup" });
-          }
-        });
-      }
-    );
-  }
-});
 
-// Listen for requests to reset full-page translation settings
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === "resetFullPageSettings") {
-    chrome.storage.sync.set({
-      fullPageTranslate: true,
-      fullPageTargetLang: "en",
-      showFullPagePopup: true,
-      autoCloseSidePanel: false,
-      excludedSites: [],
-      excludedLanguages: [],
-      autoTranslateLangs: [],
-    });
-  }
-});
 
 /* ---------------- 📑 Context Menu (toggle support) ---------------- */
 function createContextMenu() {
