@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import GeneralSettings from "./GeneralSettings";
 import Integrations from "./Integrations";
 import GlossarySettings from "./GlossarySettings";
+import ApiSettings from "./ApiSettings";
 import { LexiFlowSettingsProvider } from "../context/LexiFlowSettingsContext";
 
 const SettingsPage = () => {
@@ -20,6 +21,8 @@ const SettingsPage = () => {
     switch (activeTab) {
       case "#general":
         return <GeneralSettings />;
+      case "#api":
+        return <ApiSettings />;
       case "#integrations":
         return <Integrations />;
       case "#glossary":
@@ -53,6 +56,19 @@ const SettingsPage = () => {
             }`}
           >
             General Settings
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("#api");
+              window.location.hash = "#api";
+            }}
+            className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
+              activeTab === "#api"
+                ? "bg-pink-100 text-pink-700"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            API & Security
           </button>
           <button
             onClick={() => {
